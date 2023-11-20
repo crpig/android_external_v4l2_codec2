@@ -2,7 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-//#define LOG_NDEBUG 0
+#include "C2Config.h"
+// #define LOG_NDEBUG 0
 #define LOG_TAG "V4L2Encoder"
 
 #include <v4l2_codec2/components/V4L2Encoder.h>
@@ -216,6 +217,8 @@ bool V4L2Encoder::initialize(C2Config::profile_t outputProfile, std::optional<ui
     mKeyFramePeriod = keyFramePeriod;
     mKeyFrameCounter = 0;
 
+    ALOGW("%s outputProfile=%d level=%d bitrateMode=%d bitrate=%d", __func__, outputProfile, level.value_or(88), bitrateMode, bitrate);
+
     // Open the V4L2 device for encoding to the requested output format.
     // TODO(dstaessens): Avoid conversion to VideoCodecProfile and use C2Config::profile_t directly.
     uint32_t outputPixelFormat = V4L2Device::C2ProfileToV4L2PixFmt(outputProfile, false);
@@ -253,6 +256,11 @@ bool V4L2Encoder::initialize(C2Config::profile_t outputProfile, std::optional<ui
     if (!mInputQueue || !mOutputQueue) {
         ALOGE("Failed to get V4L2 device queues");
         return false;
+    }
+
+    // for H264 encoder, we only support BITRATE_VARIABLE
+    if(outputProfile == PROFILE_AVC_BASELINE) {
+        bitrateMode = C2Config::BITRATE_VARIABLE;
     }
 
     // Configure the requested bitrate mode and bitrate on the device.
